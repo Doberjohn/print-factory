@@ -50,6 +50,8 @@ names are unchanged, so `docs/HANDOFF.md` still applies.
 - **jsPDF is 4.2.1**, up from the artifact's 2.5.1, which had security advisories. Its
   PDFs are byte-identical to 2.5.1's apart from the version in `/Producer`; the parity
   tests check this on every run.
+- **Printing cost** is €1 per page, set by `PRICE_PER_PAGE` in `src/config.js`. Every page
+  is printed, empty slots included, so the price follows the page count: €2 per pair.
 - **Autosave is per site.** Work autosaved in the old artifact stays there. Use Save batch in
   the artifact and Open batch here to move it.
 
@@ -65,6 +67,7 @@ on the first run and cached in `tests/.fixtures/`.
 - `lazy-load.spec.js`: TensorFlow.js and the model are never requested when not needed;
   model files arrive byte-identical.
 - `layout.spec.js`: page pairs sit side by side on wide screens and wrap on narrower ones.
+- `price.spec.js`: the printing cost follows the page count and hides with no cards.
 - `parity.spec.js`: runs the original artifact (`tests/reference/artifact.html`) side by
   side with this build and requires byte-identical PDFs, cut specs and PNG pages, apart
   from the PDF creation time, file ID and jsPDF version, plus batch files opening in both

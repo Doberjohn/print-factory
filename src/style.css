@@ -63,6 +63,8 @@ section{display:flex;flex-direction:column}
 .batch input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);font:inherit}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .count{font:600 1.05rem "Barlow Condensed", sans-serif}
+.price{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--line);padding-top:10px;font-size:.85rem;color:var(--muted)}
+.price .amount{font:600 1.35rem/1 "Barlow Condensed", "Arial Narrow", sans-serif;color:var(--accent)}
 
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}

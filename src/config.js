@@ -5,6 +5,7 @@ export const DEFAULTS = { cardW: 63.5, cardH: 88, gap: 3, bleed: 0, sheet: "a4",
 export const STORE_KEY = "card-sheet-builder:settings:v2";
 export const PREVIEW_DPI = 110;
 export const MARK_OFFSET = 1, MARK_LEN = 5, MARK_WIDTH = 0.1;
+export const PRICE_PER_PAGE = 1; // euros for each printed page
 
 export const cfg = loadCfg();
 

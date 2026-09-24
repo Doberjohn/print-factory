@@ -1,4 +1,4 @@
-import { cfg, saveCfg, PREVIEW_DPI } from "./config.js";
+import { cfg, saveCfg, PREVIEW_DPI, PRICE_PER_PAGE } from "./config.js";
 import { computeLayout, fmt } from "./geometry.js";
 import { sources, slots, setSlots, nextUid } from "./state.js";
 import { byName, addFiles } from "./images.js";
@@ -48,6 +48,7 @@ const ICON_DUP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" str
 const ICON_DEL = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
 
 let dragFrom = -1;
+const euros = v => "€" + fmt(v);
 
 export async function renderAll() {
   const L = computeLayout(cfg);
@@ -55,6 +56,10 @@ export async function renderAll() {
   const per = L.cols * L.rows;
   $("#customFields").style.display = cfg.sheet === "custom" ? "" : "none";
   $("#count").textContent = `${slots.length} of ${n * per} cards`;
+  // Every page is printed, empty slots and all, so the price follows the page count.
+  $("#price").style.display = slots.length ? "" : "none";
+  $("#priceNote").textContent = `${n} pages to print at ${euros(PRICE_PER_PAGE)} each`;
+  $("#priceAmount").textContent = euros(n * PRICE_PER_PAGE);
   queueEnhancements();
   updateExportButtons();
   renderSpec(L, n);
@@ -171,7 +176,7 @@ export async function renderAll() {
   }
   const add = document.createElement("button");
   add.type = "button"; add.className = "addpair";
-  add.innerHTML = `<span>Add two more pages</span><small>Pages ${n + 1} and ${n + 2}, another ${per * PAGES_PER_PRINT} cards</small>`;
+  add.innerHTML = `<span>Add two more pages</span><small>Pages ${n + 1} and ${n + 2}, another ${per * PAGES_PER_PRINT} cards · +${euros(PAGES_PER_PRINT * PRICE_PER_PAGE)}</small>`;
   add.addEventListener("click", () => { setPairCount(pairCount + 1); setStatus(`Added pages ${n + 1} and ${n + 2}.`); schedule(); });
   wrap.appendChild(add);
 }
