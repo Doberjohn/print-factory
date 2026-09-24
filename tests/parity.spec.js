@@ -1,26 +1,46 @@
 // The port against the original single-file artifact (tests/reference/artifact.html,
-// unchanged from the handoff). The artifact's CDN libraries are served from
-// node_modules: the same pinned versions, byte-identical to what the CDNs serve.
+// unchanged from the handoff), running with exactly the libraries it loads from CDNs.
+import fs from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import JSZip from "jszip";
 import { FIX } from "./support/fixtures.js";
 import { openApp, addCards, openBatch, download, buildBatch, appState } from "./support/app.js";
-import { withoutTimestamps } from "./support/pdf.js";
+import { comparable } from "./support/pdf.js";
+import { sha256 } from "./support/formats.js";
 
 const ARTIFACT = "https://artifact.test/";
+// Served locally, byte-identical to the CDN files. The app moved on to jsPDF 4.x, so the
+// artifact's jsPDF 2.5.1 is kept in tests/reference/; the other libraries still match
+// the app's own versions in node_modules.
 const CDN = {
-  "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js": "node_modules/pako/dist/pako.min.js",
-  "https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js": "node_modules/utif/UTIF.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js": "node_modules/jspdf/dist/jspdf.umd.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js": "node_modules/jszip/dist/jszip.min.js",
-  "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js": "node_modules/@tensorflow/tfjs/dist/tf.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js": { file: "node_modules/pako/dist/pako.min.js", pkg: "pako", version: "2.1.0" },
+  "https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js": { file: "node_modules/utif/UTIF.js", pkg: "utif", version: "3.1.0" },
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js": {
+    file: "tests/reference/jspdf-2.5.1.umd.min.js",
+    sha256: "98ccf17aa10c20bb1301762618fcc9b6ab3a4e7f26b6071d64d0b41154df3875",
+  },
+  "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js": { file: "node_modules/jszip/dist/jszip.min.js", pkg: "jszip", version: "3.10.1" },
+  "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js": { file: "node_modules/@tensorflow/tfjs/dist/tf.min.js", pkg: "@tensorflow/tfjs", version: "4.22.0" },
 };
 
+// The reference must stay the artifact as it shipped: fail loudly if a library drifts.
+function checkReferenceLibraries() {
+  for (const [url, lib] of Object.entries(CDN)) {
+    if (lib.pkg) {
+      const { version } = JSON.parse(fs.readFileSync(`node_modules/${lib.pkg}/package.json`, "utf8"));
+      if (version !== lib.version) throw new Error(`The artifact loads ${lib.pkg} ${lib.version}, but node_modules has ${version}. Keep a ${lib.version} copy in tests/reference/ for ${url}.`);
+    } else if (sha256(fs.readFileSync(lib.file)) !== lib.sha256) {
+      throw new Error(`${lib.file} is not the file the artifact loads from ${url}.`);
+    }
+  }
+}
+
 async function openArtifact(browser) {
+  checkReferenceLibraries();
   const context = await browser.newContext();
   await context.route(ARTIFACT, route => route.fulfill({ path: path.resolve("tests/reference/artifact.html"), contentType: "text/html; charset=utf-8" }));
-  for (const [url, file] of Object.entries(CDN)) {
+  for (const [url, { file }] of Object.entries(CDN)) {
     await context.route(url, route => route.fulfill({ path: path.resolve(file), contentType: "text/javascript; charset=utf-8" }));
   }
   await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, route => route.fulfill({ contentType: "text/css", body: "" }));
@@ -75,8 +95,8 @@ for (const [name, configure] of Object.entries(SETTINGS)) {
     }
     expect(await appState(page)).toEqual(await appState(artifact));
     for (const button of ["#pdfBtn", "#specBtn"]) {
-      const expected = withoutTimestamps((await download(artifact, button)).bytes);
-      const actual = withoutTimestamps((await download(page, button)).bytes);
+      const expected = comparable((await download(artifact, button)).bytes);
+      const actual = comparable((await download(page, button)).bytes);
       expect(firstDifference(expected, actual), button).toBeNull();
     }
     await artifact.context().close();

@@ -44,12 +44,12 @@ names are unchanged, so `docs/HANDOFF.md` still applies.
 - **TensorFlow.js is lazy.** It is built into its own `assets/tfjs-*.js` chunk and fetched,
   together with the model, only when an image actually needs enhancing. Sessions with only
   full-resolution scans never download either.
-- **Library versions are pinned** to the ones the artifact was tested with. `utif` declares
-  its own pako 1.x; an npm override makes it use the same pako 2.1.0 the artifact loaded.
-- **jsPDF stays at 2.5.1** because PDF output must not change. `npm audit` reports advisories
-  against it, in features this app doesn't use (AcroForm, `addJS`, `html()`, BMP and GIF
-  decoding, Node file access). Upgrading is a separate job: the parity tests below will
-  show whether the output changed.
+- **Library versions are pinned** to the ones the artifact was tested with, except jsPDF.
+  `utif` declares its own pako 1.x; an npm override makes it use the same pako 2.1.0 the
+  artifact loaded.
+- **jsPDF is 4.2.1**, up from the artifact's 2.5.1, which had security advisories. Its
+  PDFs are byte-identical to 2.5.1's apart from the version in `/Producer`; the parity
+  tests check this on every run.
 - **Autosave is per site.** Work autosaved in the old artifact stays there. Use Save batch in
   the artifact and Open batch here to move it.
 
@@ -66,8 +66,9 @@ on the first run and cached in `tests/.fixtures/`.
   model files arrive byte-identical.
 - `parity.spec.js`: runs the original artifact (`tests/reference/artifact.html`) side by
   side with this build and requires byte-identical PDFs, cut specs and PNG pages, apart
-  from the PDF creation time and file ID, plus batch files opening in both directions.
-  The artifact's CDN libraries are served from `node_modules`; the files are identical.
+  from the PDF creation time, file ID and jsPDF version, plus batch files opening in both
+  directions. The artifact's CDN libraries are served locally and are identical to the
+  CDN files: its jsPDF 2.5.1 from `tests/reference/`, the rest from `node_modules`.
 
 The enhancement test runs ESRGAN on WebGL. It uses Chromium's new headless mode, which
 gets a hardware GPU where one exists; on a machine without one it falls back to software

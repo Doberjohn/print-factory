@@ -1,3 +1,7 @@
 # The AI model is vendored and must reach the browser byte-identical,
 # so git never converts line endings anywhere under it.
 public/models/** -text
+
+# The original artifact and the jsPDF build it loaded. The parity tests check the
+# jsPDF file's SHA-256, so it too must stay byte-identical on every checkout.
+tests/reference/** -text

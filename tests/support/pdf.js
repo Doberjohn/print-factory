@@ -61,9 +61,18 @@ export function cropMarks(page) {
   return { x: distinct(vertical), y: distinct(horizontal) };
 }
 
-// The file with its two per-export values removed: the creation time and the random file ID.
-export function withoutTimestamps(bytes) {
-  return Buffer.from(Buffer.from(bytes).toString("latin1")
-    .replace(/\/CreationDate \(D:[^)]*\)/, "/CreationDate ()")
-    .replace(/\/ID \[ <[0-9A-F]+> <[0-9A-F]+> \]/, "/ID []"), "latin1");
+// The file with the values that legitimately differ between two exports blanked out:
+// the creation time, the random file ID and the jsPDF version in /Producer. The xref
+// table and startxref go too, because their byte offsets shift with the length of the
+// version string. Every object stays in, compared byte for byte.
+export function comparable(bytes) {
+  const text = Buffer.from(bytes).toString("latin1");
+  const xref = text.lastIndexOf("\nxref\n");
+  const body = text.slice(0, xref)
+    .replace(/\/Producer \(jsPDF [^)]*\)/, "/Producer (jsPDF)")
+    .replace(/\/CreationDate \(D:[^)]*\)/, "/CreationDate ()");
+  const trailer = text.slice(text.indexOf("\ntrailer\n", xref))
+    .replace(/\/ID \[[^\]]*\]/, "/ID []")
+    .replace(/startxref\n\d+/, "startxref");
+  return Buffer.from(body + trailer, "latin1");
 }
