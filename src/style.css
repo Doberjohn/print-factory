@@ -123,8 +123,10 @@ button{font:inherit;cursor:pointer}
 .matbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
 .matbar .note{font-size:.9rem;opacity:.85}
 .matbar .check{color:var(--mat-ink)}
-.sheets{display:flex;flex-direction:column;gap:30px;align-items:flex-start}
-.pair{display:flex;flex-direction:column;gap:12px;width:100%;max-width:914px}
+/* Page pairs fill each row left to right and wrap when the next one won't fit. The add
+   button takes the next free spot: beside a pair it stretches to the pair's height. */
+.sheets{display:flex;flex-wrap:wrap;gap:30px 64px;align-items:stretch}
+.pair{display:flex;flex-direction:column;gap:12px;flex:0 1 914px;min-width:0}
 .pairhead{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:30px}
 .pairhead h3{margin:0;font:600 1.15rem "Barlow Condensed", sans-serif}
 .pairrow{display:grid;grid-template-columns:repeat(2,minmax(0,440px));gap:34px}
@@ -132,7 +134,7 @@ button{font:inherit;cursor:pointer}
 figure{margin:0;width:100%}
 .matbtn{border:1px solid rgba(255,255,255,.35);background:transparent;color:var(--mat-ink);border-radius:7px;padding:5px 11px;font-size:.88rem}
 .matbtn:hover{border-color:var(--mat-ink);background:rgba(255,255,255,.06)}
-.addpair{width:100%;max-width:914px;border:1.5px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.04);color:var(--mat-ink);border-radius:10px;padding:26px 16px;font:600 1.15rem "Barlow Condensed", sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px}
+.addpair{flex:0 1 914px;min-width:0;border:1.5px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.04);color:var(--mat-ink);border-radius:10px;padding:26px 16px;font:600 1.15rem "Barlow Condensed", sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .addpair small{font:400 .88rem "Barlow", sans-serif;opacity:.8}
 .addpair:hover{border-color:var(--mat-ink);background:rgba(255,255,255,.08)}
 figcaption{font:600 1rem "Barlow Condensed", sans-serif;margin-top:10px;display:flex;justify-content:space-between;opacity:.9}

@@ -64,6 +64,7 @@ on the first run and cached in `tests/.fixtures/`.
 - `bleed.spec.js`: pixel checks on exported pages that bleed covers every gap.
 - `lazy-load.spec.js`: TensorFlow.js and the model are never requested when not needed;
   model files arrive byte-identical.
+- `layout.spec.js`: page pairs sit side by side on wide screens and wrap on narrower ones.
 - `parity.spec.js`: runs the original artifact (`tests/reference/artifact.html`) side by
   side with this build and requires byte-identical PDFs, cut specs and PNG pages, apart
   from the PDF creation time, file ID and jsPDF version, plus batch files opening in both
