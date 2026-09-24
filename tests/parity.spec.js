@@ -9,6 +9,12 @@ import { openApp, addCards, openBatch, download, buildBatch, appState } from "./
 import { comparable } from "./support/pdf.js";
 import { sha256 } from "./support/formats.js";
 
+// Chrome resamples a 2D canvas on either the GPU or the CPU, choosing at run time, and
+// the two give slightly different pixels. Wherever cards are scaled (300 DPI output,
+// keep proportions), two runs of the same code could then embed different image bytes.
+// Rendering on the CPU makes both apps deterministic, so they compare byte for byte.
+test.use({ launchOptions: { args: ["--disable-accelerated-2d-canvas"] } });
+
 const ARTIFACT = "https://artifact.test/";
 // Served locally, byte-identical to the CDN files. The app moved on to jsPDF 4.x, so the
 // artifact's jsPDF 2.5.1 is kept in tests/reference/; the other libraries still match
