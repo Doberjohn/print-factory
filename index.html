@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card sheet builder</title>
+<meta name="description" content="Lay out trading card images into print-ready sheets at exact millimeter positions, with bleed, crop marks and a cut spec for the print shop.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <header>
+      <h1>Card sheet builder</h1>
+      <p class="lede">Drop your card images in and get print-ready pages. Every card lands at the same size and position, every time.</p>
+    </header>
+
+    <section>
+      <h2>Cards</h2>
+      <div class="drop" id="drop">
+        <p>Drop scans or downloaded card images (TIFF, PNG or JPG) here or anywhere on the mat. They're added in filename order. A saved batch zip works here too.</p>
+        <div class="row">
+          <button class="btn" id="pick" type="button">Choose files</button>
+          <input type="file" id="file" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp,image/*" multiple hidden>
+          <span class="count" id="count">No cards yet</span>
+        </div>
+        <div class="row">
+          <button class="btn link" id="sort" type="button">Sort by filename</button>
+          <button class="btn link" id="clear" type="button">Remove all</button>
+        </div>
+      </div>
+      <div class="batch">
+        <div class="field">
+          <label for="batchName">Batch name</label>
+          <input id="batchName" type="text" maxlength="60" autocomplete="off">
+        </div>
+        <div class="row">
+          <button class="btn" id="saveBatch" type="button">Save batch</button>
+          <button class="btn" id="openBatch" type="button">Open batch</button>
+          <button class="btn link" id="newBatch" type="button">New batch</button>
+          <input type="file" id="batchFile" accept=".zip,application/zip" hidden>
+        </div>
+        <p class="hint" id="saveNote" style="margin:0">Your work is saved in this browser as you go.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Card size</h2>
+      <div class="fields">
+        <div class="field"><label for="cardW">Width</label><div class="unit"><input id="cardW" data-k="cardW" type="number" step="0.1" min="10"><span>mm</span></div></div>
+        <div class="field"><label for="cardH">Height</label><div class="unit"><input id="cardH" data-k="cardH" type="number" step="0.1" min="10"><span>mm</span></div></div>
+      </div>
+      <p class="hint">Standard card size is 63.5 × 88 mm. Measure a real card to confirm.</p>
+    </section>
+
+    <section>
+      <h2>Cutting</h2>
+      <div class="fields">
+        <div class="field"><label for="gap">Gap between cards</label><div class="unit"><input id="gap" data-k="gap" type="number" step="0.5" min="0"><span>mm</span></div></div>
+        <div class="field"><label for="bleed">Bleed</label><div class="unit"><input id="bleed" data-k="bleed" type="number" step="0.5" min="0"><span>mm</span></div></div>
+      </div>
+      <p class="hint">Leave bleed at 0 for clean white gaps between cards. Bleed stretches each card's edge into the gap so a slightly off cut shows card color instead of white, but the cards then look joined on the sheet.</p>
+      <div class="stack" style="margin-top:12px">
+        <label class="check"><input type="checkbox" data-k="marks" id="marks"><span>Crop marks<small>Short lines in the margins that show where to cut.</small></span></label>
+        <label class="check"><input type="checkbox" data-k="labels" id="labels"><span>Page label<small>Small text at the bottom edge with page number and sizes.</small></span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sheet</h2>
+      <div class="stack">
+        <div>
+          <div class="legend" id="sheetL">Paper size</div>
+          <div class="seg" role="radiogroup" aria-labelledby="sheetL">
+            <label><input type="radio" name="sheet" value="a4" data-k="sheet"><span>A4</span></label>
+            <label><input type="radio" name="sheet" value="letter" data-k="sheet"><span>Letter</span></label>
+            <label><input type="radio" name="sheet" value="custom" data-k="sheet"><span>Custom</span></label>
+          </div>
+        </div>
+        <div class="fields" id="customFields">
+          <div class="field"><label for="pageW">Sheet width</label><div class="unit"><input id="pageW" data-k="pageW" type="number" step="1" min="50"><span>mm</span></div></div>
+          <div class="field"><label for="pageH">Sheet height</label><div class="unit"><input id="pageH" data-k="pageH" type="number" step="1" min="50"><span>mm</span></div></div>
+        </div>
+        <div>
+          <div class="legend" id="dpiL">Resolution</div>
+          <div class="seg" role="radiogroup" aria-labelledby="dpiL">
+            <label><input type="radio" name="dpi" value="300" data-k="dpi"><span>300 DPI</span></label>
+            <label><input type="radio" name="dpi" value="600" data-k="dpi"><span>600 DPI</span></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Images</h2>
+      <div class="stack">
+        <label class="check"><input type="checkbox" data-k="enhance" id="enhance"><span>Enhance low-res images<small>Upscales small images, like database downloads, with AI so text stays sharp. Runs in your browser and takes a few seconds per image.</small></span></label>
+        <div>
+          <div class="legend" id="fitL">Fitting images into the card size</div>
+          <div class="seg" role="radiogroup" aria-labelledby="fitL">
+            <label><input type="radio" name="fit" value="stretch" data-k="fit"><span>Stretch to fit</span></label>
+            <label><input type="radio" name="fit" value="cover" data-k="fit"><span>Keep proportions</span></label>
+          </div>
+          <p class="hint">Stretch fills the card exactly and corrects scanner distortion. Keep proportions trims a sliver instead.</p>
+        </div>
+        <label class="check"><input type="checkbox" data-k="rotate" id="rotate"><span>Rotate landscape images<small>Sideways cards like main schemes are turned to fit.</small></span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>For the print shop</h2>
+      <div class="spec" id="spec"></div>
+      <ul class="warns" id="warns"></ul>
+    </section>
+
+    <section class="exports">
+      <button class="btn primary" id="pdfBtn" type="button" disabled>Download print PDF</button>
+      <button class="btn" id="pngBtn" type="button" disabled>Download pages as PNG</button>
+      <button class="btn" id="specBtn" type="button">Download cut spec (PDF)</button>
+      <p class="hint" id="fillNote" style="margin:2px 0 0"></p>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </section>
+  </aside>
+
+  <main class="mat" id="mat">
+    <div class="matbar">
+      <span class="note" id="matNote">Drag a card to move it. Hover a card to duplicate or remove it.</span>
+      <label class="check"><input type="checkbox" id="showCuts" checked><span>Show cut lines</span></label>
+    </div>
+    <div class="sheets" id="sheets"></div>
+  </main>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

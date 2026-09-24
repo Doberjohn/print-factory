@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vercel/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+tests/.fixtures/
+
+*.log
+.DS_Store

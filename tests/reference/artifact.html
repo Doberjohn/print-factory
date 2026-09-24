@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card sheet builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mat:#2B5A4A;
+  --mat-line:rgba(255,255,255,.06);
+  --mat-line-strong:rgba(255,255,255,.13);
+  --mat-ink:#E4EFEA;
+  --panel:#F4F5F1;
+  --ink:#16201C;
+  --muted:#58655F;
+  --line:#D2D8D4;
+  --field:#FFFFFF;
+  --accent:#B8005F;
+  --accent-ink:#FFFFFF;
+  --accent-soft:rgba(184,0,95,.10);
+  --warn:#8A4F00;
+  --warn-bg:#FFF0D6;
+  --paper:#FFFFFF;
+  --slot:#E6EAE6;
+  --focus:#B8005F;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --mat:#173A2F; --mat-line:rgba(255,255,255,.05); --mat-line-strong:rgba(255,255,255,.10); --mat-ink:#CFE2DA;
+    --panel:#121816; --ink:#E6ECE9; --muted:#95A39D; --line:#2B3632; --field:#1A2220;
+    --accent:#FF4FA3; --accent-ink:#1A0010; --accent-soft:rgba(255,79,163,.14);
+    --warn:#FFC266; --warn-bg:#3A2A10; --paper:#F3F3EF; --slot:#DCE0DC; --focus:#FF4FA3;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --mat:#173A2F; --mat-line:rgba(255,255,255,.05); --mat-line-strong:rgba(255,255,255,.10); --mat-ink:#CFE2DA;
+  --panel:#121816; --ink:#E6ECE9; --muted:#95A39D; --line:#2B3632; --field:#1A2220;
+  --accent:#FF4FA3; --accent-ink:#1A0010; --accent-soft:rgba(255,79,163,.14);
+  --warn:#FFC266; --warn-bg:#3A2A10; --paper:#F3F3EF; --slot:#DCE0DC; --focus:#FF4FA3;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--panel);
+  color:var(--ink);
+  font:400 15px/1.5 "Barlow", "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.app{display:grid;grid-template-columns:minmax(300px,370px) 1fr;min-height:100vh}
+@media (max-width:860px){.app{grid-template-columns:1fr}}
+
+/* Sidebar */
+.side{padding:28px 26px 40px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:26px;overflow-y:auto;max-height:100vh;position:sticky;top:0}
+@media (max-width:860px){.side{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}}
+h1{font:700 2rem/1 "Barlow Condensed", "Arial Narrow", sans-serif;margin:0 0 8px;letter-spacing:.01em}
+.lede{margin:0;color:var(--muted);max-width:34ch}
+h2{font:600 1.2rem/1.2 "Barlow Condensed", "Arial Narrow", sans-serif;margin:0 0 10px}
+section{display:flex;flex-direction:column}
+
+.drop{
+  border:1.5px dashed var(--line);border-radius:10px;padding:18px 16px;text-align:left;
+  background:var(--field);display:flex;flex-direction:column;gap:10px;transition:border-color .15s, background .15s;
+}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop p{margin:0;color:var(--muted)}
+.batch{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.batch input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);font:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.count{font:600 1.05rem "Barlow Condensed", sans-serif}
+
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.legend{font-size:.85rem;color:var(--muted)}
+.unit{position:relative}
+.unit input{width:100%;padding:8px 38px 8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);font:inherit}
+.unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.85rem;pointer-events:none}
+.hint{font-size:.82rem;color:var(--muted);margin:8px 0 0}
+
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--field)}
+.seg label{flex:1;position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:7px 6px;font-size:.9rem;border-right:1px solid var(--line)}
+.seg label:last-child span{border-right:0}
+.seg input:checked + span{background:var(--ink);color:var(--panel);font-weight:600}
+.seg input:focus-visible + span{outline:2px solid var(--focus);outline-offset:-3px}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+.check{display:flex;gap:9px;align-items:flex-start;cursor:pointer}
+.check input{margin:3px 0 0;accent-color:var(--accent);width:16px;height:16px}
+.check small{display:block;color:var(--muted);font-size:.82rem}
+
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:8px;padding:8px 13px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;padding:11px 16px;font-size:1rem}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.link{border:0;background:none;padding:4px 0;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.exports{display:flex;flex-direction:column;gap:8px}
+
+.warns{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.warns li{background:var(--warn-bg);color:var(--warn);border-radius:7px;padding:7px 10px;font-size:.86rem}
+.status{min-height:1.5em;font-size:.9rem;color:var(--muted)}
+.status.err{color:var(--warn)}
+
+.spec{border:1px solid var(--line);border-radius:10px;background:var(--field);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.spec dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.9rem}
+.spec dt{color:var(--muted)}
+.spec dd{margin:0;text-align:right}
+.cuts{font-size:.88rem}
+.cuts b{display:block;font-weight:600;margin-bottom:2px}
+.cuts code{font:500 .88rem "Barlow", sans-serif;word-spacing:.15em}
+
+/* Mat */
+.mat{
+  background-color:var(--mat);
+  background-image:
+    linear-gradient(var(--mat-line-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mat-line-strong) 1px, transparent 1px),
+    linear-gradient(var(--mat-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mat-line) 1px, transparent 1px);
+  background-size:100px 100px,100px 100px,20px 20px,20px 20px;
+  padding:34px 34px 60px;color:var(--mat-ink);min-width:0;position:relative;
+}
+.mat.over{box-shadow:inset 0 0 0 3px var(--accent)}
+.matbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.matbar .note{font-size:.9rem;opacity:.85}
+.matbar .check{color:var(--mat-ink)}
+.sheets{display:flex;flex-direction:column;gap:30px;align-items:flex-start}
+.pair{display:flex;flex-direction:column;gap:12px;width:100%;max-width:914px}
+.pairhead{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:30px}
+.pairhead h3{margin:0;font:600 1.15rem "Barlow Condensed", sans-serif}
+.pairrow{display:grid;grid-template-columns:repeat(2,minmax(0,440px));gap:34px}
+@media (max-width:1180px){.pairrow{grid-template-columns:minmax(0,440px)}}
+figure{margin:0;width:100%}
+.matbtn{border:1px solid rgba(255,255,255,.35);background:transparent;color:var(--mat-ink);border-radius:7px;padding:5px 11px;font-size:.88rem}
+.matbtn:hover{border-color:var(--mat-ink);background:rgba(255,255,255,.06)}
+.addpair{width:100%;max-width:914px;border:1.5px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.04);color:var(--mat-ink);border-radius:10px;padding:26px 16px;font:600 1.15rem "Barlow Condensed", sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px}
+.addpair small{font:400 .88rem "Barlow", sans-serif;opacity:.8}
+.addpair:hover{border-color:var(--mat-ink);background:rgba(255,255,255,.08)}
+figcaption{font:600 1rem "Barlow Condensed", sans-serif;margin-top:10px;display:flex;justify-content:space-between;opacity:.9}
+.sheet{position:relative;width:100%;background:var(--paper);box-shadow:0 1px 0 rgba(0,0,0,.25),0 14px 30px -12px rgba(0,0,0,.55)}
+.sheet canvas{display:block;width:100%;height:100%}
+.sheet svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.slot{position:absolute;border-radius:2px}
+.slot.empty{background:var(--slot);outline:1px dashed #9AA59F;outline-offset:-1px;display:flex;align-items:center;justify-content:center;color:#6C7872;font-size:.8rem;cursor:pointer;border:0;padding:0}
+.slot.empty:hover{background:#D9DFDA}
+.slot.filled{cursor:grab}
+.slot.filled:active{cursor:grabbing}
+.slot.dragging{opacity:.35}
+.slot.target{outline:3px solid var(--accent);outline-offset:1px}
+.tools{position:absolute;top:4px;right:4px;display:flex;gap:4px;opacity:0;transition:opacity .12s}
+.slot:hover .tools,.slot:focus-within .tools{opacity:1}
+@media (hover:none){.tools{opacity:1}}
+.tool{width:26px;height:26px;border-radius:6px;border:0;background:rgba(20,28,25,.82);color:#fff;display:grid;place-items:center;padding:0}
+.tool:hover{background:var(--accent)}
+.tool svg{width:14px;height:14px;position:static}
+.tag{position:absolute;left:4px;bottom:4px;background:rgba(20,28,25,.82);color:#fff;font-size:.68rem;padding:1px 6px;border-radius:4px}
+.tag.w{background:#8A4F00}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <header>
+      <h1>Card sheet builder</h1>
+      <p class="lede">Drop your card images in and get print-ready pages. Every card lands at the same size and position, every time.</p>
+    </header>
+
+    <section>
+      <h2>Cards</h2>
+      <div class="drop" id="drop">
+        <p>Drop scans or downloaded card images (TIFF, PNG or JPG) here or anywhere on the mat. They're added in filename order. A saved batch zip works here too.</p>
+        <div class="row">
+          <button class="btn" id="pick" type="button">Choose files</button>
+          <input type="file" id="file" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp,image/*" multiple hidden>
+          <span class="count" id="count">No cards yet</span>
+        </div>
+        <div class="row">
+          <button class="btn link" id="sort" type="button">Sort by filename</button>
+          <button class="btn link" id="clear" type="button">Remove all</button>
+        </div>
+      </div>
+      <div class="batch">
+        <div class="field">
+          <label for="batchName">Batch name</label>
+          <input id="batchName" type="text" maxlength="60" autocomplete="off">
+        </div>
+        <div class="row">
+          <button class="btn" id="saveBatch" type="button">Save batch</button>
+          <button class="btn" id="openBatch" type="button">Open batch</button>
+          <button class="btn link" id="newBatch" type="button">New batch</button>
+          <input type="file" id="batchFile" accept=".zip,application/zip" hidden>
+        </div>
+        <p class="hint" id="saveNote" style="margin:0">Your work is saved in this browser as you go.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Card size</h2>
+      <div class="fields">
+        <div class="field"><label for="cardW">Width</label><div class="unit"><input id="cardW" data-k="cardW" type="number" step="0.1" min="10"><span>mm</span></div></div>
+        <div class="field"><label for="cardH">Height</label><div class="unit"><input id="cardH" data-k="cardH" type="number" step="0.1" min="10"><span>mm</span></div></div>
+      </div>
+      <p class="hint">Standard card size is 63.5 × 88 mm. Measure a real card to confirm.</p>
+    </section>
+
+    <section>
+      <h2>Cutting</h2>
+      <div class="fields">
+        <div class="field"><label for="gap">Gap between cards</label><div class="unit"><input id="gap" data-k="gap" type="number" step="0.5" min="0"><span>mm</span></div></div>
+        <div class="field"><label for="bleed">Bleed</label><div class="unit"><input id="bleed" data-k="bleed" type="number" step="0.5" min="0"><span>mm</span></div></div>
+      </div>
+      <p class="hint">Leave bleed at 0 for clean white gaps between cards. Bleed stretches each card's edge into the gap so a slightly off cut shows card color instead of white, but the cards then look joined on the sheet.</p>
+      <div class="stack" style="margin-top:12px">
+        <label class="check"><input type="checkbox" data-k="marks" id="marks"><span>Crop marks<small>Short lines in the margins that show where to cut.</small></span></label>
+        <label class="check"><input type="checkbox" data-k="labels" id="labels"><span>Page label<small>Small text at the bottom edge with page number and sizes.</small></span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sheet</h2>
+      <div class="stack">
+        <div>
+          <div class="legend" id="sheetL">Paper size</div>
+          <div class="seg" role="radiogroup" aria-labelledby="sheetL">
+            <label><input type="radio" name="sheet" value="a4" data-k="sheet"><span>A4</span></label>
+            <label><input type="radio" name="sheet" value="letter" data-k="sheet"><span>Letter</span></label>
+            <label><input type="radio" name="sheet" value="custom" data-k="sheet"><span>Custom</span></label>
+          </div>
+        </div>
+        <div class="fields" id="customFields">
+          <div class="field"><label for="pageW">Sheet width</label><div class="unit"><input id="pageW" data-k="pageW" type="number" step="1" min="50"><span>mm</span></div></div>
+          <div class="field"><label for="pageH">Sheet height</label><div class="unit"><input id="pageH" data-k="pageH" type="number" step="1" min="50"><span>mm</span></div></div>
+        </div>
+        <div>
+          <div class="legend" id="dpiL">Resolution</div>
+          <div class="seg" role="radiogroup" aria-labelledby="dpiL">
+            <label><input type="radio" name="dpi" value="300" data-k="dpi"><span>300 DPI</span></label>
+            <label><input type="radio" name="dpi" value="600" data-k="dpi"><span>600 DPI</span></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Images</h2>
+      <div class="stack">
+        <label class="check"><input type="checkbox" data-k="enhance" id="enhance"><span>Enhance low-res images<small>Upscales small images, like database downloads, with AI so text stays sharp. Runs in your browser and takes a few seconds per image.</small></span></label>
+        <div>
+          <div class="legend" id="fitL">Fitting images into the card size</div>
+          <div class="seg" role="radiogroup" aria-labelledby="fitL">
+            <label><input type="radio" name="fit" value="stretch" data-k="fit"><span>Stretch to fit</span></label>
+            <label><input type="radio" name="fit" value="cover" data-k="fit"><span>Keep proportions</span></label>
+          </div>
+          <p class="hint">Stretch fills the card exactly and corrects scanner distortion. Keep proportions trims a sliver instead.</p>
+        </div>
+        <label class="check"><input type="checkbox" data-k="rotate" id="rotate"><span>Rotate landscape images<small>Sideways cards like main schemes are turned to fit.</small></span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>For the print shop</h2>
+      <div class="spec" id="spec"></div>
+      <ul class="warns" id="warns"></ul>
+    </section>
+
+    <section class="exports">
+      <button class="btn primary" id="pdfBtn" type="button" disabled>Download print PDF</button>
+      <button class="btn" id="pngBtn" type="button" disabled>Download pages as PNG</button>
+      <button class="btn" id="specBtn" type="button">Download cut spec (PDF)</button>
+      <p class="hint" id="fillNote" style="margin:2px 0 0"></p>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </section>
+  </aside>
+
+  <main class="mat" id="mat">
+    <div class="matbar">
+      <span class="note" id="matNote">Drag a card to move it. Hover a card to duplicate or remove it.</span>
+      <label class="check"><input type="checkbox" id="showCuts" checked><span>Show cut lines</span></label>
+    </div>
+    <div class="sheets" id="sheets"></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<!-- ESRGAN medium x4 from UpscalerJS (MIT License, Copyright (c) 2022 Kevin Scott) -->
+<!--
+  The AI upscaler weights used to be embedded here as base64 inside a
+  <script type="application/json" id="sr-model"> tag, because the artifact
+  sandbox blocked network requests. On a normal website, load the model files
+  from /models/esrgan-medium/x4/model.json instead. See HANDOFF.md, task 2.
+-->
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const SHEETS = { a4: [210, 297], letter: [215.9, 279.4] };
+const DEFAULTS = { cardW: 63.5, cardH: 88, gap: 3, bleed: 0, sheet: "a4", pageW: 210, pageH: 297,
+  dpi: 600, marks: true, labels: true, rotate: true, enhance: true, fit: "stretch", cols: 3, rows: 3 };
+const STORE_KEY = "card-sheet-builder:settings:v2";
+const PREVIEW_DPI = 110;
+const MARK_OFFSET = 1, MARK_LEN = 5, MARK_WIDTH = 0.1;
+
+let cfg = loadCfg();
+const sources = new Map();   // id -> {id, key, name, img, w, h, thumb, enh, enhThumb, enhState, rot:{}}
+let slots = [];              // [{uid, src}]
+let uidSeq = 1, srcSeq = 1;
+let busy = false;
+
+/* ---------- settings ---------- */
+function loadCfg() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  return Object.assign({}, DEFAULTS, saved);
+}
+function saveCfg() { try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); } catch (e) {} }
+
+function applyCfgToInputs() {
+  document.querySelectorAll("[data-k]").forEach(el => {
+    const k = el.dataset.k;
+    if (el.type === "checkbox") el.checked = !!cfg[k];
+    else if (el.type === "radio") el.checked = String(cfg[k]) === el.value;
+    else el.value = cfg[k];
+  });
+}
+function bindSettings() {
+  applyCfgToInputs();
+  document.querySelectorAll("[data-k]").forEach(el => {
+    const k = el.dataset.k;
+    el.addEventListener(el.type === "number" ? "input" : "change", () => {
+      if (el.type === "checkbox") cfg[k] = el.checked;
+      else if (el.type === "radio") { if (!el.checked) return; cfg[k] = k === "dpi" ? Number(el.value) : el.value; }
+      else {
+        const v = parseFloat(el.value);
+        if (!isFinite(v)) return;
+        cfg[k] = v;
+      }
+      saveCfg();
+      if (k === "rotate" || k === "enhance") sources.forEach(s => s.rot = {});
+      schedule();
+    });
+  });
+}
+
+/* ---------- geometry (single source of truth) ---------- */
+const r3 = v => Math.round(v * 1000) / 1000;
+const fmt = v => String(Math.round(v * 100) / 100);
+
+function sheetSize(c) {
+  return c.sheet === "custom" ? [Math.max(50, c.pageW), Math.max(50, c.pageH)] : SHEETS[c.sheet] || SHEETS.a4;
+}
+
+function computeLayout(c) {
+  const [W, H] = sheetSize(c);
+  const cols = c.cols, rows = c.rows;
+  const w = Math.max(10, c.cardW), h = Math.max(10, c.cardH);
+  const g = Math.max(0, c.gap || 0), b = Math.max(0, c.bleed || 0);
+  const gridW = cols * w + (cols - 1) * g, gridH = rows * h + (rows - 1) * g;
+  const x0 = r3((W - gridW) / 2), y0 = r3((H - gridH) / 2);
+  const warnings = [];
+  if (x0 < 0 || y0 < 0) warnings.push(`The grid (${fmt(gridW)} × ${fmt(gridH)} mm) is bigger than the sheet. Reduce the gap or use a larger sheet.`);
+  const bIn = g > 0 ? Math.min(b, g / 2) : 0;
+  const bOx = Math.max(0, Math.min(b, x0)), bOy = Math.max(0, Math.min(b, y0));
+  if (b > 0 && g === 0) warnings.push("With no gap, cards share a cut line, so bleed only goes on the outer edges of the grid.");
+  else if (g > 0 && b > g / 2) warnings.push(`Bleed between cards is limited to half the gap (${fmt(bIn)} mm).`);
+  const cards = [];
+  for (let r = 0; r < rows; r++) for (let col = 0; col < cols; col++) {
+    cards.push({
+      x: r3(x0 + col * (w + g)), y: r3(y0 + r * (h + g)), w, h,
+      bl: col === 0 ? bOx : bIn, br: col === cols - 1 ? bOx : bIn,
+      bt: r === 0 ? bOy : bIn, bb: r === rows - 1 ? bOy : bIn
+    });
+  }
+  const uniq = a => [...new Set(a.map(r3))].sort((p, q) => p - q);
+  const cutsX = uniq(cards.flatMap(k => [k.x, k.x + w]));
+  const cutsY = uniq(cards.flatMap(k => [k.y, k.y + h]));
+
+  const marks = [];
+  let markSides = 0;
+  if (c.marks) {
+    const topStart = y0 - bOy - MARK_OFFSET, botStart = y0 + gridH + bOy + MARK_OFFSET;
+    const leftStart = x0 - bOx - MARK_OFFSET, rightStart = x0 + gridW + bOx + MARK_OFFSET;
+    const lenTop = Math.min(MARK_LEN, topStart), lenBot = Math.min(MARK_LEN, H - botStart);
+    const lenLeft = Math.min(MARK_LEN, leftStart), lenRight = Math.min(MARK_LEN, W - rightStart);
+    if (lenTop >= 1) { markSides++; cutsX.forEach(x => marks.push([x, topStart, x, topStart - lenTop])); }
+    if (lenBot >= 1) { markSides++; cutsX.forEach(x => marks.push([x, botStart, x, botStart + lenBot])); }
+    if (lenLeft >= 1) { markSides++; cutsY.forEach(y => marks.push([leftStart, y, leftStart - lenLeft, y])); }
+    if (lenRight >= 1) { markSides++; cutsY.forEach(y => marks.push([rightStart, y, rightStart + lenRight, y])); }
+    if (markSides < 4 && x0 >= 0 && y0 >= 0) warnings.push("The margins are too narrow for crop marks on every side. Some marks were left out.");
+  }
+  const labelY = H - 2.5;
+  const labelFits = c.labels && (H - (y0 + gridH + bOy + (c.marks ? MARK_OFFSET + MARK_LEN : 0))) >= 4.5;
+  return { W, H, w, h, g, b, cols, rows, x0, y0, gridW, gridH, bIn, bOx, bOy, cards, cutsX, cutsY, marks, warnings, labelY, labelFits };
+}
+
+/* ---------- loading ---------- */
+function isTiff(u8) {
+  return (u8[0] === 0x49 && u8[1] === 0x49 && u8[2] === 42 && u8[3] === 0) ||
+         (u8[0] === 0x4D && u8[1] === 0x4D && u8[2] === 0 && u8[3] === 42);
+}
+async function decodeFile(file) {
+  const buf = await file.arrayBuffer();
+  if (isTiff(new Uint8Array(buf, 0, Math.min(4, buf.byteLength)))) {
+    if (!window.UTIF) throw new Error("the TIFF reader didn't load");
+    const ifds = UTIF.decode(buf);
+    const ifd = ifds.find(d => d.t256 && d.t257) || ifds[0];
+    UTIF.decodeImage(buf, ifd, ifds);
+    const rgba = UTIF.toRGBA8(ifd);
+    const cv = document.createElement("canvas");
+    cv.width = ifd.width; cv.height = ifd.height;
+    cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer, rgba.byteOffset, ifd.width * ifd.height * 4), ifd.width, ifd.height), 0, 0);
+    return cv;
+  }
+  return await createImageBitmap(new Blob([buf], { type: file.type || "image/png" }));
+}
+function makeThumb(img) {
+  const H = 520, s = Math.min(1, H / img.height);
+  const cv = document.createElement("canvas");
+  cv.width = Math.max(1, Math.round(img.width * s)); cv.height = Math.max(1, Math.round(img.height * s));
+  const x = cv.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(img, 0, 0, cv.width, cv.height);
+  return cv;
+}
+const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+
+async function addFiles(fileList) {
+  const all = [...fileList];
+  const zips = all.filter(f => /\.zip$/i.test(f.name) || f.type === "application/zip");
+  if (zips.length) { await openBatchFile(zips[0]); return; }
+  const files = all.filter(f => /\.(tiff?|png|jpe?g|webp)$/i.test(f.name) || /^image\//.test(f.type)).sort(byName);
+  if (!files.length) { setStatus("Those files aren't images. Use TIFF, PNG or JPG images, or a saved batch zip.", true); return; }
+  const failed = [];
+  for (let i = 0; i < files.length; i++) {
+    setStatus(`Reading ${files[i].name} (${i + 1} of ${files.length})`);
+    try {
+      const key = `${files[i].name}|${files[i].size}|${files[i].lastModified}`;
+      const existing = [...sources.values()].find(s => s.key === key);
+      if (existing) { slots.push({ uid: uidSeq++, src: existing.id }); continue; }
+      const img = await decodeFile(files[i]);
+      const id = "s" + (srcSeq++);
+      sources.set(id, { id, key, name: files[i].name, img, w: img.width, h: img.height, thumb: makeThumb(img), enh: null, enhThumb: null, enhState: null, rot: {} });
+      slots.push({ uid: uidSeq++, src: id });
+    } catch (e) {
+      failed.push(files[i].name);
+    }
+  }
+  setStatus(failed.length ? `Couldn't read ${failed.join(", ")}. Try saving them as PNG.` : `Added ${files.length - failed.length} card${files.length - failed.length === 1 ? "" : "s"}.`, failed.length > 0);
+  schedule();
+}
+
+/* ---------- rendering ---------- */
+function usesEnhanced(src) { return !!(cfg.enhance && src.enh); }
+function oriented(src, useThumb) {
+  const enh = usesEnhanced(src);
+  const base = enh ? (useThumb ? src.enhThumb : src.enh) : (useThumb ? src.thumb : src.img);
+  if (!(cfg.rotate && src.w > src.h)) return base;
+  const key = (useThumb ? "t" : "f") + (enh ? "e" : "o");
+  if (!src.rot[key]) {
+    const cv = document.createElement("canvas");
+    cv.width = base.height; cv.height = base.width;
+    const x = cv.getContext("2d");
+    x.translate(cv.width, 0); x.rotate(Math.PI / 2);
+    x.drawImage(base, 0, 0);
+    src.rot[key] = cv;
+  }
+  return src.rot[key];
+}
+
+// Renders one card with bleed. Sizes in whole pixels.
+function renderCard(img, trimW, trimH, pl, pr, pt, pb, fit) {
+  const t = document.createElement("canvas");
+  t.width = trimW; t.height = trimH;
+  const tx = t.getContext("2d");
+  tx.imageSmoothingEnabled = true; tx.imageSmoothingQuality = "high";
+  tx.fillStyle = "#fff"; tx.fillRect(0, 0, trimW, trimH);
+  const sw = img.width, sh = img.height;
+  if (fit === "cover") {
+    const s = Math.max(trimW / sw, trimH / sh);
+    const cw = trimW / s, ch = trimH / s;
+    tx.drawImage(img, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, trimW, trimH);
+  } else {
+    tx.drawImage(img, 0, 0, sw, sh, 0, 0, trimW, trimH);
+  }
+  if (!pl && !pr && !pt && !pb) return t;
+  const out = document.createElement("canvas");
+  out.width = trimW + pl + pr; out.height = trimH + pt + pb;
+  const o = out.getContext("2d");
+  o.imageSmoothingEnabled = false;
+  // Sample a pixel line slightly inside the edge, away from scanner fringe.
+  const kx = Math.min(Math.max(1, Math.round(trimW * 0.004)), trimW - 1);
+  const ky = Math.min(Math.max(1, Math.round(trimH * 0.004)), trimH - 1);
+  if (pl) o.drawImage(t, kx, 0, 1, trimH, 0, pt, pl, trimH);
+  if (pr) o.drawImage(t, trimW - 1 - kx, 0, 1, trimH, pl + trimW, pt, pr, trimH);
+  if (pt) o.drawImage(t, 0, ky, trimW, 1, pl, 0, trimW, pt);
+  if (pb) o.drawImage(t, 0, trimH - 1 - ky, trimW, 1, pl, pt + trimH, trimW, pb);
+  if (pl && pt) o.drawImage(t, kx, ky, 1, 1, 0, 0, pl, pt);
+  if (pr && pt) o.drawImage(t, trimW - 1 - kx, ky, 1, 1, pl + trimW, 0, pr, pt);
+  if (pl && pb) o.drawImage(t, kx, trimH - 1 - ky, 1, 1, 0, pt + trimH, pl, pb);
+  if (pr && pb) o.drawImage(t, trimW - 1 - kx, trimH - 1 - ky, 1, 1, pl + trimW, pt + trimH, pr, pb);
+  o.drawImage(t, pl, pt);
+  return out;
+}
+
+function cardPixels(k, dpi) {
+  const P = mm => Math.round(mm / 25.4 * dpi);
+  const L = P(k.x), R = P(k.x + k.w), T = P(k.y), B = P(k.y + k.h);
+  const BL = P(k.x - k.bl), BR = P(k.x + k.w + k.br), BT = P(k.y - k.bt), BB = P(k.y + k.h + k.bb);
+  return { L, R, T, B, BL, BR, BT, BB, trimW: R - L, trimH: B - T, pl: L - BL, pr: BR - R, pt: T - BT, pb: BB - B };
+}
+
+function pageSlots(p, L) { const n = L.cols * L.rows; return slots.slice(p * n, p * n + n); }
+const PAGES_PER_PRINT = 2;
+let pairCount = 1;
+function cardsPerPrint() { return cfg.cols * cfg.rows * PAGES_PER_PRINT; }
+function syncPairs() { pairCount = Math.max(1, pairCount, Math.ceil(slots.length / cardsPerPrint())); }
+function pageCount() { syncPairs(); return pairCount * PAGES_PER_PRINT; }
+function capacity() { return pageCount() * cfg.cols * cfg.rows; }
+function cardsMissing() { return Math.max(0, capacity() - slots.length); }
+function labelText(L, p, n) {
+  return `Page ${p + 1} of ${n}. Cards ${fmt(L.w)} x ${fmt(L.h)} mm, gap ${fmt(L.g)} mm, bleed ${fmt(L.b)} mm.`;
+}
+
+async function renderPageCanvas(L, p, n, dpi, useThumb, onCard) {
+  const P = mm => Math.round(mm / 25.4 * dpi);
+  const cv = document.createElement("canvas");
+  cv.width = P(L.W); cv.height = P(L.H);
+  const ctx = cv.getContext("2d");
+  if (!ctx) throw new Error("canvas");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  const items = pageSlots(p, L);
+  for (let i = 0; i < items.length; i++) {
+    const src = sources.get(items[i].src);
+    if (!src) continue;
+    const k = L.cards[i], px = cardPixels(k, dpi);
+    const card = renderCard(oriented(src, useThumb), px.trimW, px.trimH, px.pl, px.pr, px.pt, px.pb, cfg.fit);
+    ctx.drawImage(card, px.BL, px.BT);
+    if (onCard) await onCard(i, items.length);
+  }
+  if (L.marks.length) {
+    ctx.strokeStyle = "#000"; ctx.lineWidth = Math.max(1, MARK_WIDTH / 25.4 * dpi);
+    ctx.beginPath();
+    for (const [x1, y1, x2, y2] of L.marks) {
+      const off = ctx.lineWidth % 2 === 1 ? 0.5 : 0;
+      ctx.moveTo(P(x1) + off, P(y1) + off); ctx.lineTo(P(x2) + off, P(y2) + off);
+    }
+    ctx.stroke();
+  }
+  if (L.labelFits) {
+    ctx.fillStyle = "#555";
+    ctx.font = `${Math.max(6, Math.round(6 / 72 * dpi))}px Helvetica, Arial, sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(labelText(L, p, n), P(L.W / 2), P(L.labelY));
+  }
+  return cv;
+}
+
+/* ---------- AI enhancement for low-res images ---------- */
+const SR_SCALE = 4, SR_TILE = 96, SR_PAD = 12;
+const SR = { model: null, loading: null, queue: [], running: false, failed: false, done: 0 };
+
+// Resolution of an image when stretched across the card (short side vs card width).
+function imageDpi(w, h) { return Math.min(w, h) / (Math.max(10, cfg.cardW) / 25.4); }
+function needsEnhance(src) { return imageDpi(src.w, src.h) < cfg.dpi * 0.75; }
+function enhancing() { return SR.running || SR.queue.length > 0; }
+
+async function srModel() {
+  if (SR.model) return SR.model;
+  if (!SR.loading) SR.loading = (async () => {
+    if (!window.tf) throw new Error("tfjs missing");
+    await tf.ready();
+    const el = document.getElementById("sr-model");
+    const raw = JSON.parse(el.textContent);
+    const bin = atob(raw.weights);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const model = await tf.loadLayersModel(tf.io.fromMemory({ modelTopology: raw.topology, weightSpecs: raw.specs, weightData: bytes.buffer }));
+    SR.model = model;
+    return model;
+  })();
+  try { return await SR.loading; } catch (e) { SR.loading = null; throw e; }
+}
+
+async function upscaleImage(model, img, onProgress) {
+  const W = img.width, H = img.height;
+  // Flatten onto white so transparent corners don't turn black.
+  const flat = document.createElement("canvas");
+  flat.width = W; flat.height = H;
+  const fx = flat.getContext("2d");
+  fx.fillStyle = "#fff"; fx.fillRect(0, 0, W, H); fx.drawImage(img, 0, 0);
+  const out = document.createElement("canvas");
+  out.width = W * SR_SCALE; out.height = H * SR_SCALE;
+  const octx = out.getContext("2d");
+  const tile = document.createElement("canvas");
+  const src = tf.tidy(() => tf.browser.fromPixels(flat, 3).toFloat());
+  const total = Math.ceil(W / SR_TILE) * Math.ceil(H / SR_TILE);
+  let n = 0;
+  try {
+    for (let y = 0; y < H; y += SR_TILE) {
+      for (let x = 0; x < W; x += SR_TILE) {
+        const x0 = Math.max(0, x - SR_PAD), y0 = Math.max(0, y - SR_PAD);
+        const x1 = Math.min(W, x + SR_TILE + SR_PAD), y1 = Math.min(H, y + SR_TILE + SR_PAD);
+        const res = tf.tidy(() => model.predict(src.slice([y0, x0, 0], [y1 - y0, x1 - x0, 3]).expandDims(0)).squeeze().clipByValue(0, 255).round().toInt());
+        await tf.browser.toPixels(res, tile);
+        res.dispose();
+        const cw = Math.min(SR_TILE, W - x), ch = Math.min(SR_TILE, H - y);
+        octx.drawImage(tile, (x - x0) * SR_SCALE, (y - y0) * SR_SCALE, cw * SR_SCALE, ch * SR_SCALE, x * SR_SCALE, y * SR_SCALE, cw * SR_SCALE, ch * SR_SCALE);
+        n++;
+        if (onProgress) onProgress(n / total);
+        await tf.nextFrame();
+      }
+    }
+  } finally {
+    src.dispose();
+  }
+  return out;
+}
+
+function queueEnhancements() {
+  if (!cfg.enhance || SR.failed) return;
+  const used = new Set(slots.map(s => s.src));
+  let added = false;
+  for (const s of sources.values()) {
+    if (!used.has(s.id) || s.enh || s.enhState || !needsEnhance(s)) continue;
+    s.enhState = "queued"; SR.queue.push(s.id); added = true;
+  }
+  if (added) runQueue();
+}
+
+async function runQueue() {
+  if (SR.running) return;
+  SR.running = true;
+  updateExportButtons();
+  let count = 0;
+  try {
+    while (SR.queue.length) {
+      const id = SR.queue.shift();
+      const s = sources.get(id);
+      if (!s) continue;
+      if (!cfg.enhance) { s.enhState = null; continue; }
+      s.enhState = "working";
+      schedule();
+      try {
+        setStatus(`Loading the enhancer`);
+        const model = await srModel();
+        const left = SR.queue.length;
+        s.enh = await upscaleImage(model, s.img, f => setStatus(`Enhancing ${s.name}: ${Math.round(f * 100)}%${left ? `, ${left} more after this` : ""}`));
+        s.enhThumb = makeThumb(s.enh);
+        s.rot = {};
+        s.enhState = "done";
+        count++;
+      } catch (e) {
+        console.error(e);
+        SR.failed = true;
+        s.enhState = null;
+        SR.queue.forEach(q => { const o = sources.get(q); if (o) o.enhState = null; });
+        SR.queue = [];
+        setStatus("AI enhancement isn't available in this browser, so small images are scaled up normally.", true);
+      }
+      schedule();
+    }
+  } finally {
+    SR.running = false;
+    updateExportButtons();
+    if (count && !SR.failed) setStatus(`Enhanced ${count} image${count === 1 ? "" : "s"}.`);
+    schedule();
+  }
+}
+
+function updateExportButtons() {
+  const missing = cardsMissing();
+  const note = $("#fillNote");
+  if (missing) {
+    const n = pageCount();
+    note.textContent = `Add ${missing} more card${missing === 1 ? "" : "s"} to fill ${n === 2 ? "both pages" : `all ${n} pages`}. Downloads unlock when every page is full.`;
+  } else note.textContent = "";
+  const off = !slots.length || missing > 0 || busy || enhancing();
+  $("#pdfBtn").disabled = $("#pngBtn").disabled = off;
+}
+
+/* ---------- preview ---------- */
+let timer = 0;
+function schedule() { clearTimeout(timer); timer = setTimeout(renderAll, 60); scheduleSave(); }
+
+const ICON_DUP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 3.5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h.5"/></svg>';
+const ICON_DEL = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+
+let dragFrom = -1;
+
+async function renderAll() {
+  const L = computeLayout(cfg);
+  const n = pageCount(L);
+  const per = L.cols * L.rows;
+  $("#customFields").style.display = cfg.sheet === "custom" ? "" : "none";
+  $("#count").textContent = `${slots.length} of ${n * per} cards`;
+  queueEnhancements();
+  updateExportButtons();
+  renderSpec(L, n);
+
+  const wrap = $("#sheets");
+  wrap.textContent = "";
+  const showCuts = $("#showCuts").checked;
+  let rowEl = null;
+  for (let p = 0; p < n; p++) {
+    if (p % PAGES_PER_PRINT === 0) {
+      const pair = document.createElement("div");
+      pair.className = "pair";
+      const head = document.createElement("div");
+      head.className = "pairhead";
+      const h = document.createElement("h3");
+      const first = p + 1, last = p + PAGES_PER_PRINT;
+      h.textContent = `Pages ${first} and ${last}`;
+      head.appendChild(h);
+      if (pairCount > 1) {
+        const start = p * per, inRow = Math.max(0, Math.min(slots.length, start + per * PAGES_PER_PRINT) - start);
+        const rm = document.createElement("button");
+        rm.type = "button"; rm.className = "matbtn";
+        rm.textContent = inRow ? `Remove these pages and their ${inRow} card${inRow === 1 ? "" : "s"}` : "Remove these pages";
+        rm.addEventListener("click", () => {
+          slots.splice(start, per * PAGES_PER_PRINT);
+          pairCount = Math.max(1, pairCount - 1);
+          pruneSources();
+          setStatus(`Removed pages ${first} and ${last}.`);
+          schedule();
+        });
+        head.appendChild(rm);
+      }
+      rowEl = document.createElement("div");
+      rowEl.className = "pairrow";
+      pair.append(head, rowEl);
+      wrap.appendChild(pair);
+    }
+    const fig = document.createElement("figure");
+    const sheet = document.createElement("div");
+    sheet.className = "sheet";
+    sheet.style.aspectRatio = `${L.W} / ${L.H}`;
+    const cv = await renderPageCanvas(L, p, n, PREVIEW_DPI, true);
+    sheet.appendChild(cv);
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    if (showCuts) {
+      const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#B8005F";
+      L.cutsX.forEach(x => svg.appendChild(line(svgNS, x, 0, x, L.H, accent)));
+      L.cutsY.forEach(y => svg.appendChild(line(svgNS, 0, y, L.W, y, accent)));
+    }
+    sheet.appendChild(svg);
+
+    const items = pageSlots(p, L);
+    L.cards.forEach((k, i) => {
+      const idx = p * per + i;
+      const item = items[i];
+      const pct = (v, t) => (v / t * 100) + "%";
+      let el;
+      if (item) {
+        const src = sources.get(item.src);
+        el = document.createElement("div");
+        el.className = "slot filled";
+        el.draggable = true;
+        el.title = src.name;
+        el.setAttribute("aria-label", `Card ${idx + 1}: ${src.name}`);
+        const tools = document.createElement("div");
+        tools.className = "tools";
+        tools.appendChild(toolBtn(ICON_DUP, `Duplicate ${src.name}`, () => { slots.splice(idx + 1, 0, { uid: uidSeq++, src: item.src }); schedule(); }));
+        tools.appendChild(toolBtn(ICON_DEL, `Remove ${src.name}`, () => { slots.splice(idx, 1); pruneSources(); schedule(); }));
+        el.appendChild(tools);
+        const rotated = cfg.rotate && src.w > src.h;
+        const enh = usesEnhanced(src);
+        const srcDpi = enh ? imageDpi(src.enh.width, src.enh.height) : imageDpi(src.w, src.h);
+        if (cfg.enhance && (src.enhState === "queued" || src.enhState === "working")) addTag(el, src.enhState === "working" ? "Enhancing" : "Waiting to enhance", false);
+        else if (srcDpi < cfg.dpi * 0.75) addTag(el, enh ? `Enhanced, still ${Math.round(srcDpi)} DPI` : `Low res, ${Math.round(srcDpi)} DPI`, true);
+        else if (enh) addTag(el, rotated ? "Enhanced, rotated" : "Enhanced", false);
+        else if (rotated) addTag(el, "Rotated", false);
+        el.addEventListener("dragstart", e => { dragFrom = idx; el.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(idx)); });
+        el.addEventListener("dragend", () => { dragFrom = -1; el.classList.remove("dragging"); });
+      } else {
+        el = document.createElement("button");
+        el.type = "button";
+        el.className = "slot empty";
+        el.textContent = "Add";
+        el.setAttribute("aria-label", `Add card to position ${idx + 1}`);
+        el.addEventListener("click", () => $("#file").click());
+      }
+      el.style.left = pct(k.x, L.W); el.style.top = pct(k.y, L.H);
+      el.style.width = pct(k.w, L.W); el.style.height = pct(k.h, L.H);
+      el.addEventListener("dragover", e => { if (dragFrom >= 0) { e.preventDefault(); el.classList.add("target"); } });
+      el.addEventListener("dragleave", () => el.classList.remove("target"));
+      el.addEventListener("drop", e => {
+        el.classList.remove("target");
+        if (dragFrom < 0) return;
+        e.preventDefault(); e.stopPropagation();
+        const from = dragFrom; dragFrom = -1;
+        const [moved] = slots.splice(from, 1);
+        slots.splice(Math.min(idx, slots.length), 0, moved);
+        schedule();
+      });
+      sheet.appendChild(el);
+    });
+
+    fig.appendChild(sheet);
+    const cap = document.createElement("figcaption");
+    const a = document.createElement("span"); a.textContent = `Page ${p + 1}`;
+    const b = document.createElement("span"); b.textContent = `${fmt(L.W)} × ${fmt(L.H)} mm`;
+    cap.append(a, b);
+    fig.appendChild(cap);
+    rowEl.appendChild(fig);
+  }
+  const add = document.createElement("button");
+  add.type = "button"; add.className = "addpair";
+  add.innerHTML = `<span>Add two more pages</span><small>Pages ${n + 1} and ${n + 2}, another ${per * PAGES_PER_PRINT} cards</small>`;
+  add.addEventListener("click", () => { pairCount++; setStatus(`Added pages ${n + 1} and ${n + 2}.`); schedule(); });
+  wrap.appendChild(add);
+}
+function line(ns, x1, y1, x2, y2, color) {
+  const l = document.createElementNS(ns, "line");
+  l.setAttribute("x1", x1); l.setAttribute("y1", y1); l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+  l.setAttribute("stroke", color); l.setAttribute("stroke-width", "1"); l.setAttribute("vector-effect", "non-scaling-stroke");
+  l.setAttribute("stroke-dasharray", "4 3"); l.setAttribute("opacity", ".75");
+  return l;
+}
+function toolBtn(icon, label, fn) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "tool"; b.innerHTML = icon; b.setAttribute("aria-label", label); b.title = label;
+  b.addEventListener("click", e => { e.stopPropagation(); fn(); });
+  b.addEventListener("mousedown", e => e.stopPropagation());
+  return b;
+}
+function addTag(el, text, warn) {
+  const t = document.createElement("span");
+  t.className = "tag" + (warn ? " w" : ""); t.textContent = text;
+  el.appendChild(t);
+}
+function pruneSources() {
+  const used = new Set(slots.map(s => s.src));
+  for (const id of [...sources.keys()]) if (!used.has(id)) sources.delete(id);
+}
+
+/* ---------- spec ---------- */
+function specLines(L, n) {
+  return [
+    ["Sheet", `${fmt(L.W)} × ${fmt(L.H)} mm`],
+    ["Pages", `${n}, all with the same positions`],
+    ["Card size (trim)", `${fmt(L.w)} × ${fmt(L.h)} mm`],
+    ["Cards per page", `${L.cols} × ${L.rows}`],
+    ["Gap between cards", L.g > 0 ? `${fmt(L.g)} mm (cut on both sides)` : "None (shared cut lines)"],
+    ["Bleed", L.b > 0 ? `${fmt(Math.max(L.bIn, L.bOx))} mm` : "None"],
+    ["Grid starts at", `${fmt(L.x0)} mm from left, ${fmt(L.y0)} mm from top`],
+    ["Crop marks", cfg.marks ? "Yes" : "No"],
+  ];
+}
+function renderSpec(L, n) {
+  const box = $("#spec");
+  box.textContent = "";
+  const dl = document.createElement("dl");
+  for (const [k, v] of specLines(L, n)) {
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); dd.textContent = v;
+    dl.append(dt, dd);
+  }
+  box.appendChild(dl);
+  const cuts = document.createElement("div");
+  cuts.className = "cuts";
+  cuts.innerHTML = `<b>Vertical cuts, from the left edge (mm)</b><code></code><b style="margin-top:8px">Horizontal cuts, from the top edge (mm)</b><code></code>`;
+  const codes = cuts.querySelectorAll("code");
+  codes[0].textContent = L.cutsX.map(fmt).join(", ");
+  codes[1].textContent = L.cutsY.map(fmt).join(", ");
+  box.appendChild(cuts);
+
+  const w = $("#warns");
+  w.textContent = "";
+  L.warnings.forEach(t => { const li = document.createElement("li"); li.textContent = t; w.appendChild(li); });
+}
+
+/* ---------- batches: autosave and batch files ---------- */
+const DB_NAME = "card-sheet-builder", DB_STORE = "batches", DB_KEY = "current";
+let batchName = "Batch 1";
+let autosaveOk = true, saveTimer = 0, dbPromise = null;
+
+function idb() {
+  if (!dbPromise) dbPromise = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains(DB_STORE)) d.createObjectStore(DB_STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.onblocked = () => rej(new Error("blocked"));
+  });
+  return dbPromise;
+}
+async function idbPut(key, val) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).put(val, key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, "readonly");
+    const q = tx.objectStore(DB_STORE).get(key);
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+}
+
+function setSaveNote(t) { $("#saveNote").textContent = t; }
+function autosaveOff(msg) { autosaveOk = false; setSaveNote(msg); }
+function clockNow() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+function safeName(t) { return (t || "batch").replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "batch"; }
+
+// Images are kept as JPEG at the same quality the print PDF uses.
+function whiteCanvas(img) {
+  const c = document.createElement("canvas");
+  c.width = img.width; c.height = img.height;
+  const x = c.getContext("2d");
+  x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+  x.drawImage(img, 0, 0);
+  return c;
+}
+async function srcBlob(src) { if (!src.blob) src.blob = await toBlob(whiteCanvas(src.img), "image/jpeg", 0.95); return src.blob; }
+async function srcEnhBlob(src) {
+  if (!src.enh) return null;
+  if (!src.enhBlob) src.enhBlob = await toBlob(whiteCanvas(src.enh), "image/jpeg", 0.95);
+  return src.enhBlob;
+}
+function jpegBlob(data) { return new Blob([data], { type: "image/jpeg" }); }
+
+function scheduleSave() {
+  if (!autosaveOk) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 1200);
+}
+async function saveNow() {
+  if (!autosaveOk) return;
+  try {
+    const list = [];
+    for (const s of sources.values()) list.push({ id: s.id, key: s.key, name: s.name, blob: await srcBlob(s), enhBlob: await srcEnhBlob(s) });
+    await idbPut(DB_KEY, { v: 1, name: batchName, savedAt: Date.now(), cfg, pairCount, slots: slots.map(x => ({ src: x.src })), sources: list });
+    setSaveNote(slots.length ? `Saved in this browser at ${clockNow()}` : "Your work is saved in this browser as you go.");
+  } catch (e) {
+    console.error(e);
+    autosaveOff(e && e.name === "QuotaExceededError"
+      ? "This browser's storage is full, so autosave stopped. Use Save batch to keep a copy."
+      : "Autosave isn't available in this browser. Use Save batch to keep a copy.");
+  }
+}
+
+async function loadRecord(rec) {
+  sources.clear(); slots = []; SR.queue = []; SR.failed = false;
+  Object.assign(cfg, rec.cfg || {});
+  saveCfg();
+  applyCfgToInputs();
+  pairCount = Math.max(1, rec.pairCount || 1);
+  batchName = rec.name || batchName;
+  $("#batchName").value = batchName;
+  for (const s of rec.sources) {
+    const img = await createImageBitmap(s.blob);
+    const enh = s.enhBlob ? await createImageBitmap(s.enhBlob) : null;
+    sources.set(s.id, { id: s.id, key: s.key, name: s.name, img, w: img.width, h: img.height, thumb: makeThumb(img),
+      enh, enhThumb: enh ? makeThumb(enh) : null, enhState: enh ? "done" : null, rot: {}, blob: s.blob, enhBlob: s.enhBlob || null });
+    const num = parseInt(String(s.id).replace(/\D/g, ""), 10);
+    if (num >= srcSeq) srcSeq = num + 1;
+  }
+  slots = (rec.slots || []).filter(x => sources.has(x.src)).map(x => ({ uid: uidSeq++, src: x.src }));
+  schedule();
+}
+
+async function restoreSaved() {
+  let rec;
+  try { rec = await idbGet(DB_KEY); }
+  catch (e) { autosaveOff("Autosave isn't available in this browser. Use Save batch to keep a copy."); return; }
+  if (!rec || !rec.sources || !rec.sources.length) return;
+  setStatus("Restoring your last batch");
+  try {
+    await loadRecord(rec);
+    const when = new Date(rec.savedAt);
+    setStatus(`Restored ${slots.length} card${slots.length === 1 ? "" : "s"} saved on ${when.toLocaleDateString()} at ${when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`);
+    setSaveNote(`Saved in this browser at ${clockNow()}`);
+  } catch (e) { console.error(e); setStatus("Your saved batch couldn't be restored.", true); }
+}
+
+async function saveBatchFile() {
+  if (!window.JSZip) { setStatus("The zip library didn't load. Check your connection and reload.", true); return; }
+  if (!slots.length) { setStatus("There are no cards to save yet."); return; }
+  setStatus("Packing the batch");
+  const zip = new JSZip();
+  const man = { v: 1, name: batchName, savedAt: Date.now(), cfg, pairCount, slots: slots.map(x => ({ src: x.src })), sources: [] };
+  let i = 0;
+  for (const s of sources.values()) {
+    i++;
+    const base = `${String(i).padStart(2, "0")}_${safeName(s.name.replace(/\.[^.]+$/, ""))}`;
+    zip.file(`cards/${base}.jpg`, await srcBlob(s));
+    const e = await srcEnhBlob(s);
+    if (e) zip.file(`enhanced/${base}.jpg`, e);
+    man.sources.push({ id: s.id, key: s.key, name: s.name, file: `cards/${base}.jpg`, enhFile: e ? `enhanced/${base}.jpg` : null });
+  }
+  zip.file("batch.json", JSON.stringify(man, null, 1));
+  zip.file("README.txt", "Saved batch from the card sheet builder.\nOpen it with the Open batch button to carry on where you left off.\nThe cards folder holds every card image at print quality, usable on their own.\nThe enhanced folder holds AI-enhanced versions of small images.\n");
+  const ok = await saveFile(`${safeName(batchName)}-${stamp()}.zip`, await zip.generateAsync({ type: "blob", compression: "STORE" }));
+  if (ok) setStatus(`Batch saved: ${sources.size} image${sources.size === 1 ? "" : "s"}, ${slots.length} card${slots.length === 1 ? "" : "s"}.`);
+}
+
+async function openBatchFile(file) {
+  if (!window.JSZip) { setStatus("The zip library didn't load. Check your connection and reload.", true); return; }
+  setStatus(`Opening ${file.name}`);
+  try {
+    const zip = await JSZip.loadAsync(file);
+    const entry = zip.file("batch.json");
+    if (!entry) { setStatus("That zip isn't a saved batch.", true); return; }
+    const man = JSON.parse(await entry.async("string"));
+    const rec = { name: man.name, savedAt: man.savedAt, cfg: man.cfg, pairCount: man.pairCount, slots: man.slots, sources: [] };
+    for (const s of man.sources || []) {
+      const f = zip.file(s.file);
+      if (!f) continue;
+      const ef = s.enhFile ? zip.file(s.enhFile) : null;
+      rec.sources.push({ id: s.id, key: s.key, name: s.name,
+        blob: jpegBlob(await f.async("arraybuffer")),
+        enhBlob: ef ? jpegBlob(await ef.async("arraybuffer")) : null });
+    }
+    await loadRecord(rec);
+    setStatus(`Opened ${batchName}: ${slots.length} card${slots.length === 1 ? "" : "s"}.`);
+    scheduleSave();
+  } catch (e) { console.error(e); setStatus("That file couldn't be opened as a batch.", true); }
+}
+
+/* ---------- saving files ---------- */
+let dlPromise = null;
+async function saveFile(filename, blob) {
+  if (window.claude && typeof window.claude.use === "function") {
+    if (!dlPromise) dlPromise = window.claude.use("downloads");
+    const dl = await dlPromise;
+    if (!dl) { setStatus("Downloads aren't available in this view.", true); return false; }
+    try { await dl.save({ filename, data: blob }); return true; }
+    catch (e) {
+      const code = e && e.code;
+      if (code === "declined") setStatus("Download cancelled.");
+      else if (code === "too_large") setStatus("That file is too large here. Try 300 DPI.", true);
+      else if (code === "rate_limited") setStatus("A download prompt is already open. Finish that one first.", true);
+      else setStatus("The download didn't go through.", true);
+      return false;
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  return true;
+}
+function setStatus(t, err) { const s = $("#status"); s.textContent = t; s.classList.toggle("err", !!err); }
+const tick = () => new Promise(r => setTimeout(r, 0));
+const toBlob = (cv, type, q) => new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error("encode")), type, q));
+function stamp() { const d = new Date(); const p = v => String(v).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+
+async function withBusy(fn, needsFull) {
+  if (busy || enhancing() || (needsFull && cardsMissing())) return;
+  busy = true;
+  document.querySelectorAll(".exports .btn").forEach(b => b.disabled = true);
+  try { await fn(); }
+  catch (e) { console.error(e); setStatus("Something went wrong while building the file. Try 300 DPI if the pages are very large.", true); }
+  finally {
+    busy = false;
+    $("#specBtn").disabled = false;
+    updateExportButtons();
+  }
+}
+
+async function exportPdf() {
+  if (!window.jspdf) { setStatus("The PDF library didn't load. Check your connection and reload.", true); return; }
+  const L = computeLayout(cfg), n = pageCount(L), dpi = cfg.dpi;
+  const doc = new window.jspdf.jsPDF({ unit: "mm", format: [L.W, L.H], orientation: L.W > L.H ? "landscape" : "portrait", compress: true });
+  doc.setProperties({ title: "Card sheets", creator: "Card sheet builder" });
+  const cache = new Map();
+  for (let p = 0; p < n; p++) {
+    if (p > 0) doc.addPage([L.W, L.H], L.W > L.H ? "landscape" : "portrait");
+    const items = pageSlots(p, L);
+    for (let i = 0; i < items.length; i++) {
+      setStatus(`Building PDF: page ${p + 1} of ${n}, card ${i + 1} of ${items.length}`);
+      await tick();
+      const src = sources.get(items[i].src);
+      if (!src) continue;
+      const k = L.cards[i];
+      const pw = Math.round((k.w + k.bl + k.br) / 25.4 * dpi);
+      const ph = Math.round((k.h + k.bt + k.bb) / 25.4 * dpi);
+      const pl = Math.round(k.bl / 25.4 * dpi), pt = Math.round(k.bt / 25.4 * dpi);
+      const pr = Math.round(k.br / 25.4 * dpi), pb = Math.round(k.bb / 25.4 * dpi);
+      const tw = pw - pl - pr, th = ph - pt - pb;
+      const key = [src.id, usesEnhanced(src) ? "e" : "o", cfg.rotate && src.w > src.h, cfg.fit, tw, th, pl, pr, pt, pb].join("|");
+      let data = cache.get(key);
+      if (!data) {
+        const card = renderCard(oriented(src, false), tw, th, pl, pr, pt, pb, cfg.fit);
+        const blob = await toBlob(card, "image/jpeg", 0.95);
+        data = new Uint8Array(await blob.arrayBuffer());
+        cache.set(key, data);
+      }
+      doc.addImage(data, "JPEG", k.x - k.bl, k.y - k.bt, k.w + k.bl + k.br, k.h + k.bt + k.bb, key, "NONE");
+    }
+    if (L.marks.length) {
+      doc.setDrawColor(0); doc.setLineWidth(MARK_WIDTH);
+      for (const [x1, y1, x2, y2] of L.marks) doc.line(x1, y1, x2, y2);
+    }
+    if (L.labelFits) {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(6); doc.setTextColor(85);
+      doc.text(labelText(L, p, n), L.W / 2, L.labelY, { align: "center" });
+    }
+  }
+  setStatus("Saving PDF");
+  const ok = await saveFile(`card-sheets-${stamp()}.pdf`, doc.output("blob"));
+  if (ok) setStatus(`PDF ready: ${n} page${n === 1 ? "" : "s"} at ${dpi} DPI.`);
+}
+
+// PNG with physical size (pHYs chunk) so other apps print it at the right size.
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function withDpi(blob, dpi) {
+  const src = new Uint8Array(await blob.arrayBuffer());
+  const ppm = Math.round(dpi / 0.0254);
+  const chunk = new Uint8Array(21), dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9); chunk.set([0x70, 0x48, 0x59, 0x73], 4);
+  dv.setUint32(8, ppm); dv.setUint32(12, ppm); chunk[16] = 1;
+  dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+  const out = new Uint8Array(src.length + 21);
+  out.set(src.subarray(0, 33), 0); out.set(chunk, 33); out.set(src.subarray(33), 54);
+  return new Blob([out], { type: "image/png" });
+}
+async function exportPng() {
+  const L = computeLayout(cfg), n = pageCount(L), dpi = cfg.dpi;
+  const files = [];
+  for (let p = 0; p < n; p++) {
+    let cv;
+    try {
+      cv = await renderPageCanvas(L, p, n, dpi, false, async (i, total) => { setStatus(`Building PNG: page ${p + 1} of ${n}, card ${i + 1} of ${total}`); await tick(); });
+    } catch (e) { setStatus("This browser can't make a page that large. Switch to 300 DPI.", true); return; }
+    setStatus(`Encoding page ${p + 1} of ${n}`); await tick();
+    files.push({ name: `page-${p + 1}.png`, blob: await withDpi(await toBlob(cv, "image/png"), dpi) });
+    cv.width = cv.height = 1;
+  }
+  let ok;
+  if (files.length === 1) ok = await saveFile(`card-sheet-${stamp()}.png`, files[0].blob);
+  else {
+    if (!window.JSZip) { setStatus("The zip library didn't load. Check your connection and reload.", true); return; }
+    setStatus("Packing pages into a zip");
+    const zip = new JSZip();
+    files.forEach(f => zip.file(f.name, f.blob));
+    ok = await saveFile(`card-sheets-${stamp()}.zip`, await zip.generateAsync({ type: "blob", compression: "STORE" }));
+  }
+  if (ok) setStatus(`PNG ready: ${n} page${n === 1 ? "" : "s"} at ${dpi} DPI.`);
+}
+
+async function exportSpec() {
+  if (!window.jspdf) { setStatus("The PDF library didn't load. Check your connection and reload.", true); return; }
+  const L = computeLayout(cfg), n = pageCount(L);
+  const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const M = 18;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(20);
+  doc.text("Cut specification", M, 24);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(90);
+  doc.text("All measurements in millimeters, from the top-left corner of the printed sheet.", M, 31);
+
+  let y = 42;
+  doc.setFontSize(10.5);
+  for (const [k, v] of specLines(L, n)) {
+    doc.setTextColor(90); doc.text(k, M, y);
+    doc.setTextColor(20); doc.text(v, M + 45, y);
+    y += 6.2;
+  }
+  y += 4;
+  doc.setFont("helvetica", "bold"); doc.setTextColor(20); doc.text("Vertical cuts, from the left edge", M, y); y += 5.5;
+  doc.setFont("helvetica", "normal");
+  doc.text(doc.splitTextToSize(L.cutsX.map((v, i) => `V${i + 1}: ${fmt(v)}`).join("     "), 174), M, y); y += 11;
+  doc.setFont("helvetica", "bold"); doc.text("Horizontal cuts, from the top edge", M, y); y += 5.5;
+  doc.setFont("helvetica", "normal");
+  doc.text(doc.splitTextToSize(L.cutsY.map((v, i) => `H${i + 1}: ${fmt(v)}`).join("     "), 174), M, y); y += 12;
+
+  // Diagram
+  const maxW = 110, maxH = 297 - y - 22;
+  const s = Math.min(maxW / L.W, maxH / L.H);
+  const ox = (210 - L.W * s) / 2, oy = y + 6;
+  doc.setDrawColor(60); doc.setLineWidth(0.3);
+  doc.rect(ox, oy, L.W * s, L.H * s);
+  doc.setFillColor(225, 229, 226);
+  L.cards.forEach(k => doc.rect(ox + k.x * s, oy + k.y * s, k.w * s, k.h * s, "F"));
+  doc.setDrawColor(184, 0, 95); doc.setLineWidth(0.2);
+  doc.setFontSize(6.5); doc.setTextColor(184, 0, 95);
+  const near = (arr, i, d) => i + d >= 0 && i + d < arr.length && Math.abs(arr[i + d] - arr[i]) * s < 5;
+  L.cutsX.forEach((x, i, a) => {
+    const X = ox + x * s;
+    doc.line(X, oy - 2, X, oy + L.H * s + 2);
+    if (near(a, i, 1)) doc.text(`V${i + 1}`, X - 0.7, oy - 3, { align: "right" });
+    else if (near(a, i, -1)) doc.text(`V${i + 1}`, X + 0.7, oy - 3, { align: "left" });
+    else doc.text(`V${i + 1}`, X, oy - 3, { align: "center" });
+  });
+  L.cutsY.forEach((yy, i, a) => {
+    const Y = oy + yy * s;
+    doc.line(ox - 2, Y, ox + L.W * s + 2, Y);
+    const dy = near(a, i, 1) ? -0.8 : near(a, i, -1) ? 3 : 1;
+    doc.text(`H${i + 1}`, ox - 3, Y + dy, { align: "right" });
+  });
+  doc.setFontSize(8.5); doc.setTextColor(90);
+  doc.text(L.g > 0 ? "Each card is cut on all four sides. The strips between cards are waste." : "Cards touch, so neighboring cards share one cut line.", 105, oy + L.H * s + 9, { align: "center" });
+  const ok = await saveFile(`cut-spec-${stamp()}.pdf`, doc.output("blob"));
+  if (ok) setStatus("Cut spec ready.");
+}
+
+/* ---------- wiring ---------- */
+function setupDrops() {
+  const drop = $("#drop"), mat = $("#mat");
+  const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+  [drop, mat].forEach(zone => {
+    zone.addEventListener("dragover", e => { if (hasFiles(e)) { e.preventDefault(); zone.classList.add("over"); } });
+    zone.addEventListener("dragleave", e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove("over"); });
+    zone.addEventListener("drop", e => {
+      zone.classList.remove("over");
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      addFiles(e.dataTransfer.files);
+    });
+  });
+  $("#pick").addEventListener("click", () => $("#file").click());
+  $("#file").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+  $("#sort").addEventListener("click", () => {
+    slots.sort((a, b) => byName(sources.get(a.src), sources.get(b.src)) || a.uid - b.uid);
+    schedule();
+  });
+  $("#clear").addEventListener("click", () => { slots = []; sources.clear(); SR.queue = []; pairCount = 1; setStatus("Removed all cards."); schedule(); });
+  $("#showCuts").addEventListener("change", schedule);
+  $("#batchName").value = batchName;
+  $("#batchName").addEventListener("input", e => { batchName = e.target.value.trim() || "Batch 1"; scheduleSave(); });
+  $("#saveBatch").addEventListener("click", () => withBusy(saveBatchFile));
+  $("#openBatch").addEventListener("click", () => $("#batchFile").click());
+  $("#batchFile").addEventListener("change", e => { if (e.target.files[0]) openBatchFile(e.target.files[0]); e.target.value = ""; });
+  let confirmNew = false, confirmTimer = 0;
+  $("#newBatch").addEventListener("click", () => {
+    const btn = $("#newBatch");
+    if (slots.length && !confirmNew) {
+      confirmNew = true;
+      btn.textContent = "Click again to start fresh";
+      setStatus("Starting a new batch clears the current one. Use Save batch first if you want to keep it.");
+      clearTimeout(confirmTimer);
+      confirmTimer = setTimeout(() => { confirmNew = false; btn.textContent = "New batch"; }, 5000);
+      return;
+    }
+    confirmNew = false; btn.textContent = "New batch";
+    slots = []; sources.clear(); SR.queue = []; pairCount = 1;
+    batchName = `Batch ${new Date().toLocaleDateString()}`;
+    $("#batchName").value = batchName;
+    setStatus("Started a new batch.");
+    schedule();
+  });
+  $("#pdfBtn").addEventListener("click", () => withBusy(exportPdf, true));
+  $("#pngBtn").addEventListener("click", () => withBusy(exportPng, true));
+  $("#specBtn").addEventListener("click", () => withBusy(exportSpec));
+}
+
+bindSettings();
+setupDrops();
+renderAll();
+restoreSaved();
+})();
+</script>
+</body>
+</html>

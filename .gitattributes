@@ -1,0 +1,3 @@
+# The AI model is vendored and must reach the browser byte-identical,
+# so git never converts line endings anywhere under it.
+public/models/** -text
